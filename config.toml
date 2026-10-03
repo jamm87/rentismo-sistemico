@@ -1,0 +1,29 @@
+# Parámetros del pipeline. Decisiones tomadas el 2026-10-03.
+
+[alcance]
+# Legislaturas a procesar (romanos). Decisión: solo la XV.
+legislaturas = ["XV"]
+
+[bienes_rentas]
+# "completo" = cada línea del formulario; "agregados" = solo totales por bloque.
+campos = "completo"
+# Método de extracción de los PDF: PENDIENTE de decidir tras la exploración de muestras.
+metodo_extraccion = ""
+
+[destino]
+# sqlite | postgres | sheets | notion. Decisión: sqlite.
+tipo = "sqlite"
+sqlite_path = "db/rentismo.sqlite"
+
+[descargas]
+cache_dir = "data/raw"
+user_agent = "rentismo-sistemico/0.1 (+https://github.com/jamm87/rentismo-sistemico)"
+min_intervalo_s = 1.0
+reintentos = 5
+backoff_base_s = 2.0
+timeout_s = 60
+# El índice de datos abiertos cambia a diario: se vuelve a pedir pasadas estas horas.
+ttl_indice_h = 20
+
+[fuentes]
+indice_opendata = "https://www.congreso.es/es/opendata/diputados"
