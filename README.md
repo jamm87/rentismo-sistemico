@@ -35,8 +35,44 @@ cp .env.example .env   # solo si hace falta alguna clave
   y de ahí se derivan las tablas normalizadas (`interes_economico`, …).
 - Estado: la tabla `diputado` se diseñará tras inspeccionar los JSON reales.
 
-### Fase 2 · Exploración de PDFs del BOCG — *pendiente*
-### Fase 3 · Extracción y carga de bienes y rentas — *pendiente*
+### Fase 1b · Fuente externa de referencia: xerraires/diputados
+
+```bash
+.venv/bin/python -m rentismo.import_xerraires   # idempotente; muestra recuentos
+```
+
+Importa [xerraires/diputados](https://github.com/xerraires/diputados) fijado al commit de `config.toml`
+(diputados de la XV + 2.433 bienes extraídos con Tesseract y revisados a mano por su autor).
+Va a tablas propias (`ext_xerraires_*`) y **nunca se mezcla con nuestra extracción**. Limitaciones:
+solo declaraciones iniciales, sin rentas, sin nº de página. Los importes se interpretan por sección
+(deudas: `titulo` = saldo pendiente, `derecho` = importe concedido); los que tienen cifras pero no un
+importe inequívoco quedan `NULL` con `valor_flag='ilegible'`. Las filas idénticas repetidas se
+conservan con `ocurrencia > 1`. Créditos: datos de xerraires (uso libre según su README).
+
+### Fase 2 · Declaraciones de bienes y rentas (ruta docbienes)
+
+Cada diputado tiene en su ficha del Congreso enlaces a sus PDF:
+`/docbienes/leg15/{cod:06d}/{cod:06d}_{tipo}_e_{nºreg}_{aaaammdd}.pdf`. Un PDF por declaración, así
+que no hace falta segmentar boletines. El código `tipo` se guarda tal cual; su interpretación
+(000 = inicial, 001 = modificación, 002 = final) es una hipótesis pendiente de verificar.
+
+```bash
+.venv/bin/python -m rentismo.fetch_docbienes --discover   # recorre fichas y registra URL
+.venv/bin/python -m rentismo.fetch_docbienes --download   # descarga a la caché
+```
+
+La Serie D del BOCG queda como fuente secundaria, solo si aparece algo que no esté en docbienes.
+
+### Fase 3 · Extracción — *pendiente de elegir método*
+
+Cualquier extracción se compara contra la referencia de xerraires:
+
+```bash
+.venv/bin/python -m rentismo.evaluate pred.json --detalle
+```
+
+Da recall, precisión e importes exactos por sección. La referencia también tiene errores: las
+discrepancias se revisan contra el PDF.
 
 ## Descargas
 
@@ -56,6 +92,10 @@ src/rentismo/
   matching.py            nombre → diputado (solo coincidencias únicas; el resto a revision_manual)
   fetch_opendata.py      índice + JSON de diputados e intereses
   load.py                carga en SQLite
+  fetch_docbienes.py     descubrimiento y descarga de PDF de bienes (fichas → docbienes)
+  import_xerraires.py    importación de la fuente externa de referencia
+  secciones.py           secciones canónicas del formulario
+  evaluate.py            evaluación de una extracción contra la referencia
 tests/                   tests (fixtures sintéticos)
 ```
 

@@ -27,3 +27,14 @@ ttl_indice_h = 20
 
 [fuentes]
 indice_opendata = "https://www.congreso.es/es/opendata/diputados"
+
+[docbienes]
+# Ficha de cada diputado: contiene los enlaces /docbienes/leg{n}/... a sus declaraciones.
+ficha_url = "https://www.congreso.es/es/busqueda-de-diputados?p_p_id=diputadomodule&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_diputadomodule_mostrarFicha=true"
+
+[xerraires]
+# Fuente externa (OCR Tesseract + revisión manual de terceros). Fijada a un commit
+# para que la importación sea reproducible. Licencia: sin fichero LICENSE; el README
+# permite el uso libre ("Sentiros libres de cogerlo"). Se cita siempre como fuente.
+repo = "xerraires/diputados"
+commit = "5ba0b2c1f0748f07fa39ff29bf29796ce017428c"

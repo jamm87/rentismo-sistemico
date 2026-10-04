@@ -35,6 +35,9 @@ class Config:
     timeout_s: float
     ttl_indice_h: float
     indice_opendata: str
+    ficha_url: str
+    xerraires_repo: str
+    xerraires_commit: str
 
 
 def load(path: Path | None = None) -> Config:
@@ -56,6 +59,9 @@ def load(path: Path | None = None) -> Config:
         timeout_s=float(d["timeout_s"]),
         ttl_indice_h=float(d["ttl_indice_h"]),
         indice_opendata=raw["fuentes"]["indice_opendata"],
+        ficha_url=raw["docbienes"]["ficha_url"],
+        xerraires_repo=raw["xerraires"]["repo"],
+        xerraires_commit=raw["xerraires"]["commit"],
     )
     if cfg.campos_bienes not in {"completo", "agregados"}:
         raise ValueError(f"bienes_rentas.campos inválido: {cfg.campos_bienes!r}")
