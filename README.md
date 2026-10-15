@@ -99,6 +99,17 @@ Cualquier extracción se compara contra la referencia de xerraires con `rentismo
 (recall, precisión e importes exactos por sección). La referencia también tiene errores: las
 discrepancias se revisan contra el PDF.
 
+## Explorador web
+
+```bash
+.venv/bin/python -m rentismo.web     # genera data/web/explorador.html desde la BBDD
+```
+
+Una sola página HTML con los datos incrustados (fuera del repo, como todo lo que contiene datos):
+lista de diputados con buscador y filtros, y la ficha de cada uno con sus declaraciones (enlace al PDF
+oficial), sus bienes (extracción propia cuando exista; referencia xerraires mientras tanto) y sus
+intereses económicos. Se regenera después de cada fase. Plantilla: `web/explorador.template.html`.
+
 ## Descargas
 
 `src/rentismo/http.py`: ≥1 s entre peticiones, User-Agent identificable, reintentos con backoff
@@ -122,6 +133,8 @@ src/rentismo/
   secciones.py           secciones canónicas del formulario
   evaluate.py            evaluación de una extracción contra la referencia
   extract.py             extracción híbrida visión + Tesseract → decl_cabecera / decl_partida
+  web.py                 genera el explorador HTML desde la BBDD
+web/explorador.template.html   plantilla del explorador
 tests/                   tests (fixtures sintéticos)
 ```
 

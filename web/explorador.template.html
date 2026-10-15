@@ -1,0 +1,324 @@
+<title>Rentismo sistémico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+/* Layout: registro en dos paneles — índice de diputados a la izquierda, ficha a la derecha; en móvil, apilados. */
+:root {
+  --paper: #f3f5f7;      /* fondo */
+  --sheet: #ffffff;      /* paneles */
+  --ink: #18212b;        /* texto */
+  --muted: #5b6875;      /* texto secundario */
+  --rule: #d9dfe5;       /* filetes */
+  --accent: #1d4f86;     /* azul tinta */
+  --accent-soft: #e3ecf6;
+  --ok: #1f7a4d;  --ok-soft: #e1f2e9;
+  --warn: #9a6200; --warn-soft: #fbefd9;
+  --crit: #b3261e; --crit-soft: #fbe3e1;
+  --f-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1419; --sheet: #161d24; --ink: #e4e9ee; --muted: #93a1ae; --rule: #2a343e;
+    --accent: #7fb0e6; --accent-soft: #1b2a3a;
+    --ok: #6fcf9d; --ok-soft: #15291f; --warn: #e8b55a; --warn-soft: #2e2412; --crit: #f08a80; --crit-soft: #331816;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1419; --sheet: #161d24; --ink: #e4e9ee; --muted: #93a1ae; --rule: #2a343e;
+  --accent: #7fb0e6; --accent-soft: #1b2a3a;
+  --ok: #6fcf9d; --ok-soft: #15291f; --warn: #e8b55a; --warn-soft: #2e2412; --crit: #f08a80; --crit-soft: #331816;
+  color-scheme: dark;
+}
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num, .mono { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* Cabecera */
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+header h1 { font: 600 28px/1.15 var(--f-display); }
+header p { margin: 0; color: var(--muted); max-width: 70ch; }
+
+/* Fases del proceso */
+.fases { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.fase { background: var(--sheet); padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.fase b { font: 600 22px/1.1 var(--f-data); font-variant-numeric: tabular-nums; }
+.fase small { color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; width: fit-content; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.ok { color: var(--ok); background: var(--ok-soft); }
+.pill.warn { color: var(--warn); background: var(--warn-soft); }
+.pill.crit { color: var(--crit); background: var(--crit-soft); }
+.pill.info { color: var(--accent); background: var(--accent-soft); }
+
+/* Dos paneles */
+.app { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; min-width: 0; }
+
+/* Índice */
+.indice { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100vh - 32px); }
+@media (max-width: 860px) { .indice { position: static; max-height: 46vh; } }
+.filtros { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--rule); }
+.filtros input, .filtros select { width: 100%; box-sizing: border-box; font: inherit; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 9px; }
+.filtros .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.filtros label.chk { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.cuenta { font-size: 12px; color: var(--muted); }
+.lista { overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.lista button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; gap: 2px;
+  padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+.lista button:hover { background: var(--paper); }
+.lista button[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.lista .n { font-weight: 500; }
+.lista .m { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.baja { font-size: 11px; color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; }
+
+/* Ficha */
+.ficha { padding: 20px; display: grid; gap: 24px; }
+.ficha-cab { display: grid; gap: 6px; }
+.ficha-cab h2 { font: 600 26px/1.15 var(--f-display); }
+.datos { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: 14px; }
+.datos b { color: var(--ink); font-weight: 500; }
+.bio { color: var(--muted); font-size: 14px; max-width: 75ch; margin: 0; }
+section.bloque { display: grid; gap: 10px; }
+section.bloque > h3 { font: 600 17px/1.2 var(--f-display); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.nota { font-size: 13px; color: var(--muted); margin: 0; max-width: 80ch; }
+.aviso { font-size: 13px; padding: 10px 12px; border-radius: 6px; background: var(--warn-soft); color: var(--ink); border: 1px solid var(--rule); margin: 0; }
+.tabla { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--paper); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.imp { text-align: right; white-space: nowrap; font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+th.imp { text-align: right; }
+tr.sec td { background: var(--paper); font-weight: 600; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.raw { display: block; font-size: 11.5px; color: var(--warn); font-family: var(--f-data); }
+.decls { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.decls li { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { font: inherit; font-size: 13px; cursor: pointer; padding: 5px 10px; border-radius: 6px;
+  border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.vacio { color: var(--muted); font-size: 14px; margin: 0; }
+footer { font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) { .lista button { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Rentismo sistémico</h1>
+    <p id="subtitulo"></p>
+  </header>
+
+  <div class="fases" id="fases" aria-label="Estado del proceso"></div>
+
+  <div class="app">
+    <aside class="panel indice" aria-label="Diputados">
+      <div class="filtros">
+        <input id="q" type="search" placeholder="Buscar por nombre o circunscripción" autocomplete="off">
+        <div class="fila">
+          <select id="grupo" aria-label="Grupo parlamentario"><option value="">Todos los grupos</option></select>
+          <select id="estado" aria-label="Situación">
+            <option value="">Activos y de baja</option>
+            <option value="activo">En activo</option>
+            <option value="baja">De baja</option>
+          </select>
+        </div>
+        <label class="chk"><input id="conbienes" type="checkbox"> Solo con bienes en la referencia</label>
+        <div class="cuenta" id="cuenta" aria-live="polite"></div>
+      </div>
+      <ul class="lista" id="lista"></ul>
+    </aside>
+
+    <main class="panel ficha" id="ficha" aria-live="polite"></main>
+  </div>
+
+  <footer>
+    <span>Fuentes: datos abiertos del Congreso de los Diputados (diputados e intereses económicos), declaraciones de bienes y rentas en congreso.es/docbienes, y la extracción de terceros <a href="https://github.com/xerraires/diputados" target="_blank" rel="noopener">xerraires/diputados</a>.</span>
+    <span>Página no oficial, generada por el proyecto rentismo-sistemico. Ante cualquier duda, manda el PDF original de cada declaración.</span>
+    <span id="generado"></span>
+  </footer>
+</div>
+
+<script id="datos" type="application/json">/*__DATOS__*/null</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById("datos").textContent) || { resumen: {}, diputados: [] };
+  const R = D.resumen, DIP = D.diputados;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const nf = new Intl.NumberFormat("es-ES");
+  const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+  const fecha = (iso) => iso ? iso.split("-").reverse().join("/") : "";
+  const grupoCorto = (g) => (g || "").replace(/^Grupo Parlamentario\s+/i, "").replace(/ en el Congreso$/i, "");
+  const SECC = {
+    renta_salarial: "Rentas salariales", renta_dividendos: "Dividendos", renta_intereses: "Intereses",
+    renta_otras: "Otras rentas", inmueble_urbano: "Inmuebles urbanos", inmueble_rustico: "Inmuebles rústicos",
+    inmueble_sociedad: "Inmuebles de sociedades", deposito: "Depósitos y cuentas", valores: "Valores y participaciones",
+    sociedad_participada: "Sociedades participadas", vehiculo: "Vehículos", otros_bienes: "Otros bienes y derechos",
+    deuda: "Deudas", observaciones: "Observaciones" };
+  const ORDEN = Object.keys(SECC);
+  const TIPO_DECL = { "000": ["Inicial", "info"], "001": ["Modificación", "warn"], "002": ["Final", "crit"] };
+  const ESTADO = { coinciden: ["Verificado", "ok"], discrepan: ["En revisión", "crit"], ilegible: ["Ilegible", "warn"] };
+
+  // ---- Cabecera y fases
+  $("subtitulo").textContent = `Diputados de la ${R.legislatura} legislatura, sus intereses económicos y sus declaraciones de bienes y rentas.`;
+  $("generado").textContent = `Datos generados el ${R.generado}.`;
+  const fase = (titulo, valor, detalle, estado, etiqueta) =>
+    `<div class="fase"><span class="eyebrow">${esc(titulo)}</span><b>${esc(valor)}</b><small>${esc(detalle)}</small><span class="pill ${estado}">${esc(etiqueta)}</span></div>`;
+  const totDecl = R.decl_iniciales + R.decl_modificaciones + R.decl_finales;
+  $("fases").innerHTML = [
+    fase("Datos abiertos", nf.format(R.diputados), `diputados (${nf.format(R.en_activo)} en activo) · ${nf.format(R.intereses)} registros de intereses`, "ok", R.revision_nombres ? `${R.revision_nombres} nombres en revisión` : "Enlazados sin ambigüedad"),
+    fase("Declaraciones de bienes", nf.format(totDecl), `PDF: ${nf.format(R.decl_iniciales)} iniciales, ${nf.format(R.decl_modificaciones)} modificaciones, ${nf.format(R.decl_finales)} finales`, "ok", "Descubiertas"),
+    fase("Referencia externa", nf.format(R.ref_bienes), `bienes de xerraires (OCR de terceros, commit ${R.ref_commit})`, "info", "Solo declaraciones iniciales"),
+    fase("Extracción propia", `${nf.format(R.extraidas)} / ${nf.format(totDecl)}`, R.extraidas ? `${nf.format(R.partidas)} filas · ${nf.format(R.en_revision)} importes en revisión` : "declaraciones extraídas con el método híbrido", R.extraidas ? (R.extraidas >= totDecl ? "ok" : "warn") : "warn", R.extraidas ? "En curso" : "Pendiente"),
+  ].join("");
+
+  // ---- Filtros
+  const grupos = [...new Set(DIP.map((d) => d.grupo).filter(Boolean))].sort();
+  $("grupo").insertAdjacentHTML("beforeend", grupos.map((g) => `<option value="${esc(g)}">${esc(grupoCorto(g))}</option>`).join(""));
+  const norm = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  let seleccionado = null;
+
+  function filtrar() {
+    const q = norm($("q").value.trim()), g = $("grupo").value, e = $("estado").value, cb = $("conbienes").checked;
+    return DIP.filter((d) => (!q || norm(d.nombre + " " + d.circunscripcion).includes(q))
+      && (!g || d.grupo === g) && (!e || (e === "activo" ? !d.fecha_baja : !!d.fecha_baja))
+      && (!cb || d.referencia.length));
+  }
+
+  function pintarLista() {
+    const vis = filtrar();
+    $("cuenta").textContent = `${nf.format(vis.length)} de ${nf.format(DIP.length)} diputados`;
+    $("lista").innerHTML = vis.map((d) => `<li><button type="button" data-id="${d.id}" aria-current="${d.id === seleccionado}">
+      <span class="n">${esc(d.nombre)} ${d.fecha_baja ? '<span class="baja">baja</span>' : ""}</span>
+      <span class="m"><span>${esc(grupoCorto(d.grupo))}</span><span>${esc(d.circunscripcion)}</span>
+      ${d.declaraciones.length ? `<span>${d.declaraciones.length} decl.</span>` : ""}${d.referencia.length ? `<span>${d.referencia.length} bienes</span>` : ""}</span>
+    </button></li>`).join("") || `<li class="vacio" style="padding:12px">Ningún diputado coincide con los filtros.</li>`;
+  }
+
+  // ---- Ficha
+  function importe(valor, flag, bruto) {
+    if (valor != null) return eur.format(Number(valor));
+    if (flag === "ilegible" && bruto) return `<span class="muted">—</span><span class="raw" title="Texto del OCR que no se pudo interpretar como importe">${esc(bruto)}</span>`;
+    return "";
+  }
+
+  function tablaReferencia(filas) {
+    const porSec = {};
+    filas.forEach((f) => (porSec[f.seccion] ||= []).push(f));
+    let html = "";
+    ORDEN.filter((s) => porSec[s]).forEach((s) => {
+      const deuda = s === "deuda";
+      html += `<tr class="sec"><td colspan="5">${esc(SECC[s])} · ${porSec[s].length}</td></tr>`;
+      porSec[s].forEach((f) => {
+        const detalle = [f.situacion, f.derecho && !deuda ? f.derecho : null].filter(Boolean).join(" · ");
+        html += `<tr><td>${esc(f.descripcion) || '<span class="muted">(sin descripción)</span>'}${detalle ? `<div class="muted" style="font-size:12px">${esc(detalle)}</div>` : ""}</td>
+          <td class="mono">${esc(f.fecha)}</td>
+          <td class="imp">${deuda ? importe(f.importe_concedido, f.importe_concedido_flag, f.derecho) : ""}</td>
+          <td class="imp">${importe(f.valor, f.valor_flag, f.titulo)}</td></tr>`;
+      });
+    });
+    return `<div class="tabla"><table><thead><tr><th>Bien o derecho</th><th>Fecha</th><th class="imp">Concedido</th><th class="imp">Valor / saldo</th></tr></thead><tbody>${html}</tbody></table></div>`;
+  }
+
+  function tablaPropia(filas) {
+    let html = "";
+    filas.forEach((f) => {
+      const est = (e) => ESTADO[e] ? `<span class="pill ${ESTADO[e][1]}">${ESTADO[e][0]}</span>` : "";
+      const imp = f.importe != null ? eur.format(Number(f.importe)) : (f.importe_texto ? `<span class="raw">${esc(f.importe_texto)}</span>` : "");
+      html += `<tr><td class="muted">${esc(SECC[f.seccion] || f.seccion)}</td><td>${esc(f.descripcion)}${f.dudoso ? ' <span class="pill warn">dudoso</span>' : ""}</td>
+        <td class="mono">p. ${f.pagina}</td><td class="imp">${imp}</td><td>${est(f.importe_estado)}</td></tr>`;
+    });
+    return `<div class="tabla"><table><thead><tr><th>Sección</th><th>Descripción</th><th>Página</th><th class="imp">Importe</th><th>Estado</th></tr></thead><tbody>${html}</tbody></table></div>`;
+  }
+
+  function tablaIntereses(filas) {
+    const porTipo = {};
+    filas.forEach((f) => (porTipo[f.tipo || "OTROS"] ||= []).push(f));
+    const ETQ = { ACTIVIDAD: "Actividades", DONACION: "Donaciones", FUNDACIONES: "Fundaciones y asociaciones", OBSERVACIONES: "Observaciones" };
+    let html = "";
+    Object.keys(porTipo).forEach((t) => {
+      html += `<tr class="sec"><td colspan="4">${esc(ETQ[t] || t)} · ${porTipo[t].length}</td></tr>`;
+      porTipo[t].forEach((f) => {
+        const quien = [f.empleador, f.sector, f.destinatario, f.benefactor].filter(Boolean).join(" · ");
+        html += `<tr><td class="mono">${esc(fecha(f.fecha_registro) || f.fecha_registro_original)}</td>
+          <td>${esc(f.descripcion || f.observaciones)}${quien ? `<div class="muted" style="font-size:12px">${esc(quien)}</div>` : ""}</td>
+          <td class="mono">${esc(f.periodo)}</td><td class="muted" style="font-size:12px">${esc(f.declaracion)}</td></tr>`;
+      });
+    });
+    return `<div class="tabla"><table><thead><tr><th>Registro</th><th>Detalle</th><th>Periodo</th><th>Declaración</th></tr></thead><tbody>${html}</tbody></table></div>`;
+  }
+
+  function pintarFicha(d) {
+    if (!d) { $("ficha").innerHTML = `<p class="vacio">Elige un diputado de la lista.</p>`; return; }
+    const decls = d.declaraciones.length
+      ? `<ul class="decls">${d.declaraciones.map((x) => { const [t, c] = TIPO_DECL[x.tipo_codigo] || [x.tipo_codigo, "info"];
+          return `<li><span class="pill ${c}">${t}</span><span class="mono">${fecha(x.fecha)}</span><span class="muted mono">reg. ${esc(x.num_registro)}</span><a href="${esc(x.url)}" target="_blank" rel="noopener">Abrir PDF oficial</a></li>`; }).join("")}</ul>`
+      : `<p class="vacio">${d.cod ? "No hay declaraciones publicadas en su ficha del Congreso." : "Aún no tenemos su código parlamentario, así que sus declaraciones no se han buscado."}</p>`;
+    const propias = d.propias.length ? tablaPropia(d.propias)
+      : `<p class="vacio">Pendiente. Cuando corra la extracción híbrida aparecerán aquí todas sus declaraciones, rentas incluidas, con cada importe verificado o marcado para revisión.</p>`;
+    const ref = d.referencia.length
+      ? `<p class="nota">Extraído por terceros con Tesseract y revisado a mano. Solo la declaración inicial y sin rentas. Los importes que no se pudieron interpretar se muestran en naranja tal como los leyó el OCR.</p>${tablaReferencia(d.referencia)}`
+      : `<p class="vacio">Sin bienes en la referencia.</p>`;
+    $("ficha").innerHTML = `
+      <div class="ficha-cab">
+        <span class="eyebrow">${esc(grupoCorto(d.grupo))}${d.formacion ? " · " + esc(d.formacion) : ""}</span>
+        <h2>${esc(d.nombre)}</h2>
+        <div class="datos"><span>Circunscripción <b>${esc(d.circunscripcion)}</b></span>
+          <span>Alta <b class="mono">${fecha(d.fecha_alta)}</b></span>
+          ${d.fecha_baja ? `<span>Baja <b class="mono">${fecha(d.fecha_baja)}</b></span>` : `<span><b>En activo</b></span>`}
+          ${d.cod ? `<span>Cód. parlamentario <b class="mono">${d.cod}</b></span>` : ""}</div>
+        ${d.biografia ? `<p class="bio">${esc(d.biografia)}</p>` : ""}
+      </div>
+      <section class="bloque"><h3>Declaraciones de bienes y rentas <span class="muted" style="font:400 13px var(--f-body)">${d.declaraciones.length}</span></h3>${decls}</section>
+      <section class="bloque"><h3>Bienes y rentas</h3>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-propia" aria-selected="${d.propias.length > 0}">Extracción propia (${d.propias.length})</button>
+          <button type="button" role="tab" id="tab-ref" aria-selected="${d.propias.length === 0}">Referencia xerraires (${d.referencia.length})</button>
+        </div>
+        <div id="pane-propia" ${d.propias.length ? "" : "hidden"}>${propias}</div>
+        <div id="pane-ref" ${d.propias.length ? "hidden" : ""}>${ref}</div>
+      </section>
+      <section class="bloque"><h3>Intereses económicos <span class="muted" style="font:400 13px var(--f-body)">${d.intereses.length}</span></h3>
+        ${d.intereses.length ? tablaIntereses(d.intereses) : `<p class="vacio">Sin registros de intereses económicos.</p>`}</section>`;
+    const tab = (propia) => { $("tab-propia").setAttribute("aria-selected", propia); $("tab-ref").setAttribute("aria-selected", !propia);
+      $("pane-propia").hidden = !propia; $("pane-ref").hidden = propia; };
+    $("tab-propia").onclick = () => tab(true);
+    $("tab-ref").onclick = () => tab(false);
+  }
+
+  function seleccionar(id, desdeUsuario) {
+    seleccionado = id;
+    pintarFicha(DIP.find((d) => d.id === id));
+    document.querySelectorAll(".lista button").forEach((b) => b.setAttribute("aria-current", Number(b.dataset.id) === id));
+    try { history.replaceState(null, "", "#d" + id); } catch (_) {}
+    if (desdeUsuario && window.matchMedia("(max-width: 860px)").matches) $("ficha").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("lista").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-id]"); if (b) seleccionar(Number(b.dataset.id), true); });
+  ["q", "grupo", "estado", "conbienes"].forEach((id) => $(id).addEventListener("input", pintarLista));
+
+  // Estado inicial: el diputado del enlace (#d123) o uno con declaraciones, referencia e intereses.
+  const deHash = Number((location.hash.match(/^#d(\d+)$/) || [])[1]);
+  const inicial = DIP.find((d) => d.id === deHash)
+    || DIP.find((d) => d.declaraciones.length > 1 && d.referencia.length >= 8 && d.intereses.length)
+    || DIP[0];
+  pintarLista();
+  if (inicial) seleccionar(inicial.id, false);
+})();
+</script>
