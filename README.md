@@ -112,6 +112,11 @@ Cambio respecto a la estructura propuesta: el código vive en un paquete (`src/r
 los módulos se importen entre sí y desde los tests sin tocar `sys.path`, y se ejecuten con `python -m`.
 La lógica común (HTTP y normalización) está en módulos propios porque la usan varias fases.
 
+## Dependencias del sistema
+
+Para OCR: `apt-get install tesseract-ocr tesseract-ocr-spa poppler-utils` (no son paquetes de Python).
+Exploración y medidas de extracción: [docs/exploracion_pdf.md](docs/exploracion_pdf.md).
+
 ## Tests
 
 ```bash

@@ -26,6 +26,9 @@ def test_name_tokens_ignores_order_and_particles():
     ("250", Decimal("250")),
     ("-3.000,00 euros", Decimal("-3000.00")),
     ("0,5", Decimal("0.5")),
+    ("756.715'12", Decimal("756715.12")),
+    ("141.600’00 €", Decimal("141600.00")),
+    ("12'345", None),       # apóstrofo seguido de 3 cifras: no es decimal, no se adivina
     ("1,234.56", None),     # formato anglosajón: ambiguo
     ("12.34", None),        # ¿miles o decimales? no se adivina
     ("1.2345,00", None),
