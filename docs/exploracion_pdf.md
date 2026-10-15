@@ -1,6 +1,6 @@
 # Exploración de PDF y elección del método de extracción
 
-Estado: **método aún sin decidir** (`config.toml → bienes_rentas.metodo_extraccion` vacío).
+Estado: **decidido el método híbrido** (2026-10-15). Ver README, Fase 3.
 Medido el 2026-10-15 con 4 PDF de `docbienes` + el BOCG-15-D-591.
 
 ## Qué son los PDF
@@ -52,3 +52,8 @@ entrada y ≈ 4 k salida por declaración; 429 declaraciones. Precios de la tabl
 | Opus 5.5 | 4 / 20 | ≈ 56 $ | ≈ 28 $ |
 
 Tesseract: 0 $, ≈ 20 s por declaración (≈ 2,4 h en serie, menos en paralelo).
+
+## Verificador de cifras de Tesseract (tras unir cifras partidas como `56 .419€`)
+Importes de la referencia presentes en el OCR de su declaración: cod 12 24/24, cod 281 4/5,
+cod 182 10/10 → **38/39**. El que falta es el error real de dígitos (`195.005'79` → `185.00578`),
+que el híbrido marcará como `discrepan` en lugar de aceptarlo.

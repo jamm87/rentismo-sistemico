@@ -72,15 +72,31 @@ Los PDF son escaneos puros (imagen CCITT a 300 ppi, sin capa de texto): hace fal
 
 La Serie D del BOCG queda como fuente secundaria, solo si aparece algo que no esté en docbienes.
 
-### Fase 3 · Extracción — *pendiente de elegir método*
+### Fase 3 · Extracción híbrida (visión + Tesseract)
 
-Cualquier extracción se compara contra la referencia de xerraires:
+Decisión: **híbrido** (`config.toml → bienes_rentas`). La visión de Claude lee el PDF entero y devuelve
+cabecera + filas en JSON validado por esquema, copiando cada importe tal cual está impreso y la página
+de cada fila. Tesseract hace el OCR de cada página y actúa de **verificador independiente de cifras**:
+un importe solo se acepta (`importe_estado='coinciden'`) si la misma cifra aparece en el OCR de esa
+página. Si no, queda `NULL` (`discrepan` / `ilegible`) con las dos lecturas guardadas, y la vista
+`v_revision_importes` da URL + página + ambas lecturas para revisar a mano. Nunca se elige un valor.
 
 ```bash
+.venv/bin/python -m rentismo.extract --cod 12 281 182 --tipo 000 --solo-ocr   # solo Tesseract, gratis
+.venv/bin/python -m rentismo.extract --cod 12 281 182 --tipo 000              # híbrido (llama a la API)
+.venv/bin/python -m rentismo.extract --export pred.json [--fuente vision]      # para evaluar
 .venv/bin/python -m rentismo.evaluate pred.json --detalle
 ```
 
-Da recall, precisión e importes exactos por sección. La referencia también tiene errores: las
+- Tablas: `extraccion` (modelo, versión del prompt, tokens, respuesta cruda), `decl_cabecera`,
+  `decl_partida` (sección, página, campos, importe + texto + estado + lectura de Tesseract).
+- Caché en `data/derived/` (OCR y respuestas de la API): relanzar no repite OCR ni vuelve a pagar.
+  Cargar es idempotente (se reemplazan las filas de esa declaración).
+- Clave de la API: `ANTHROPIC_API_KEY`, idealmente como *secreto de red* del entorno (no en el repo).
+- Se usa `fallbacks: "default"` (respaldo en servidor si el modelo rechaza una petición).
+
+Cualquier extracción se compara contra la referencia de xerraires con `rentismo.evaluate`
+(recall, precisión e importes exactos por sección). La referencia también tiene errores: las
 discrepancias se revisan contra el PDF.
 
 ## Descargas
@@ -105,6 +121,7 @@ src/rentismo/
   import_xerraires.py    importación de la fuente externa de referencia
   secciones.py           secciones canónicas del formulario
   evaluate.py            evaluación de una extracción contra la referencia
+  extract.py             extracción híbrida visión + Tesseract → decl_cabecera / decl_partida
 tests/                   tests (fixtures sintéticos)
 ```
 

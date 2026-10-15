@@ -13,9 +13,20 @@ OTROS_BIENES = "otros_bienes"
 VEHICULO = "vehiculo"
 DEUDA = "deuda"
 OBSERVACIONES = "observaciones"
+# Solo en nuestra extracción (xerraires no las tiene):
+RENTA_SALARIAL = "renta_salarial"        # percepciones netas salariales, honorarios...
+RENTA_DIVIDENDOS = "renta_dividendos"    # dividendos y participación en beneficios
+RENTA_INTERESES = "renta_intereses"      # intereses o rendimientos de cuentas y activos
+RENTA_OTRAS = "renta_otras"              # otras rentas o percepciones
+SOCIEDAD_PARTICIPADA = "sociedad_participada"  # sociedades participadas >5% por otras sociedades
+
+TODAS = (RENTA_SALARIAL, RENTA_DIVIDENDOS, RENTA_INTERESES, RENTA_OTRAS, INMUEBLE_URBANO,
+         INMUEBLE_RUSTICO, INMUEBLE_SOCIEDAD, DEPOSITO, VALORES, SOCIEDAD_PARTICIPADA, VEHICULO,
+         OTROS_BIENES, DEUDA, OBSERVACIONES)
 
 # Secciones cuyo 'valor' es un importe en euros.
-CON_IMPORTE = {DEPOSITO, VALORES, OTROS_BIENES, DEUDA}
+CON_IMPORTE = {DEPOSITO, VALORES, OTROS_BIENES, DEUDA,
+               RENTA_SALARIAL, RENTA_DIVIDENDOS, RENTA_INTERESES, RENTA_OTRAS}
 
 _XERRAIRES = {
     "inmueble urbano": INMUEBLE_URBANO,

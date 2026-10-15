@@ -7,8 +7,13 @@ legislaturas = ["XV"]
 [bienes_rentas]
 # "completo" = cada línea del formulario; "agregados" = solo totales por bloque.
 campos = "completo"
-# Método de extracción de los PDF: PENDIENTE de decidir tras la exploración de muestras.
-metodo_extraccion = ""
+# Método de extracción de los PDF. Decisión (2026-10-15): híbrido. La visión da la estructura y
+# los importes; Tesseract verifica cada cifra por página. Sin coincidencia -> NULL + revisión.
+metodo_extraccion = "hibrido"
+modelo_vision = "claude-opus-5-5"   # alternativa más barata: "claude-sonnet-5-5" (~la mitad de coste)
+esfuerzo_vision = "medium"          # low | medium | high | xhigh | max
+ocr_dpi = 300
+tesseract_psm = 4                   # medido mejor que psm 6 en las muestras
 
 [destino]
 # sqlite | postgres | sheets | notion. Decisión: sqlite.

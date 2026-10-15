@@ -25,6 +25,10 @@ class Config:
     legislaturas: tuple[str, ...]
     campos_bienes: str
     metodo_extraccion: str
+    modelo_vision: str
+    esfuerzo_vision: str
+    ocr_dpi: int
+    tesseract_psm: int
     destino: str
     sqlite_path: Path
     cache_dir: Path
@@ -49,6 +53,10 @@ def load(path: Path | None = None) -> Config:
         legislaturas=tuple(raw["alcance"]["legislaturas"]),
         campos_bienes=raw["bienes_rentas"]["campos"],
         metodo_extraccion=raw["bienes_rentas"].get("metodo_extraccion", ""),
+        modelo_vision=raw["bienes_rentas"].get("modelo_vision", "claude-opus-5-5"),
+        esfuerzo_vision=raw["bienes_rentas"].get("esfuerzo_vision", "medium"),
+        ocr_dpi=int(raw["bienes_rentas"].get("ocr_dpi", 300)),
+        tesseract_psm=int(raw["bienes_rentas"].get("tesseract_psm", 4)),
         destino=raw["destino"]["tipo"],
         sqlite_path=ROOT / raw["destino"]["sqlite_path"],
         cache_dir=ROOT / d["cache_dir"],

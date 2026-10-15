@@ -149,3 +149,81 @@ CREATE TABLE IF NOT EXISTS diputado (
     UNIQUE (legislatura, nombre_key, fecha_alta)
 );
 CREATE INDEX IF NOT EXISTS ix_diputado_key ON diputado(nombre_key);
+
+-- ---------------------------------------------------------------------------
+-- Extracción propia de declaraciones de bienes y rentas (método híbrido).
+--   visión (Claude) -> estructura + importes tal cual impresos
+--   Tesseract       -> verificador independiente de cifras, por página
+-- Un importe solo se acepta si ambos coinciden; si no, NULL + estado y ambas lecturas.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS extraccion (
+    id                  INTEGER PRIMARY KEY,
+    declaracion_id      INTEGER NOT NULL REFERENCES declaracion_bienes(id),
+    metodo              TEXT NOT NULL,          -- 'hibrido'
+    modelo              TEXT NOT NULL,          -- modelo de visión que respondió
+    prompt_version      TEXT NOT NULL,
+    pdf_sha256          TEXT NOT NULL,
+    cache_path          TEXT NOT NULL,          -- respuesta cruda de la API (data/derived/...)
+    tokens_entrada      INTEGER,
+    tokens_salida       INTEGER,
+    creada_at           TEXT NOT NULL,
+    UNIQUE (declaracion_id, metodo, modelo, prompt_version)
+);
+
+CREATE TABLE IF NOT EXISTS decl_cabecera (
+    declaracion_id      INTEGER PRIMARY KEY REFERENCES declaracion_bienes(id),
+    extraccion_id       INTEGER NOT NULL REFERENCES extraccion(id),
+    nombre_declarado    TEXT,
+    estado_civil        TEXT,
+    regimen_economico   TEXT,
+    fecha_eleccion      TEXT,                   -- texto tal cual
+    fecha_credencial    TEXT,
+    circunscripcion     TEXT,
+    motivo              TEXT,                   -- toma_posesion | cese | otra | NULL
+    lugar_firma         TEXT,
+    fecha_firma         TEXT,
+    cuota_irpf          TEXT,                   -- Decimal si hay consenso
+    cuota_irpf_texto    TEXT,                   -- lectura de visión tal cual
+    cuota_irpf_estado   TEXT,                   -- ver decl_partida.importe_estado
+    pagina_irpf         INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS decl_partida (
+    id                  INTEGER PRIMARY KEY,
+    declaracion_id      INTEGER NOT NULL REFERENCES declaracion_bienes(id),
+    extraccion_id       INTEGER NOT NULL REFERENCES extraccion(id),
+    pagina              INTEGER NOT NULL,       -- página del PDF (1..n)
+    orden               INTEGER NOT NULL,       -- orden de la fila dentro de la declaración
+    seccion             TEXT NOT NULL,          -- canónica (secciones.py)
+    clase               TEXT,                   -- p. ej. clase de bien / procedencia de la renta
+    descripcion         TEXT,
+    situacion           TEXT,
+    fecha               TEXT,                   -- texto tal cual (fecha de adquisición / concesión)
+    derecho_titulo      TEXT,
+    -- Importe principal: renta, saldo, valor o saldo pendiente de la deuda.
+    importe             TEXT,                   -- Decimal exacto; NULL si no hay consenso
+    importe_texto       TEXT,                   -- lectura de visión tal cual impresa
+    importe_estado      TEXT,                   -- coinciden | discrepan | ilegible | vacio
+    importe_tesseract   TEXT,                   -- cifras de Tesseract más parecidas (si discrepan)
+    -- Importe concedido (solo deudas).
+    importe2            TEXT,
+    importe2_texto      TEXT,
+    importe2_estado     TEXT,
+    importe2_tesseract  TEXT,
+    dudoso              INTEGER NOT NULL DEFAULT 0,  -- la visión marcó la fila como dudosa
+    metodo              TEXT NOT NULL,          -- 'hibrido'
+    UNIQUE (declaracion_id, orden)
+);
+CREATE INDEX IF NOT EXISTS ix_partida_decl ON decl_partida(declaracion_id, seccion);
+
+-- Cola de revisión: importes sin consenso, con todo lo necesario para mirar el PDF.
+CREATE VIEW IF NOT EXISTS v_revision_importes AS
+SELECT p.id AS partida_id, d.cod_parlamentario, d.url, p.pagina, p.seccion, p.descripcion,
+       'importe' AS campo, p.importe_texto AS vision, p.importe_tesseract AS tesseract, p.importe_estado AS estado
+  FROM decl_partida p JOIN declaracion_bienes d ON d.id = p.declaracion_id
+ WHERE p.importe_estado IN ('discrepan', 'ilegible')
+UNION ALL
+SELECT p.id, d.cod_parlamentario, d.url, p.pagina, p.seccion, p.descripcion,
+       'importe2', p.importe2_texto, p.importe2_tesseract, p.importe2_estado
+  FROM decl_partida p JOIN declaracion_bienes d ON d.id = p.declaracion_id
+ WHERE p.importe2_estado IN ('discrepan', 'ilegible');
