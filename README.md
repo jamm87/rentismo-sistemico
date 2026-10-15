@@ -33,7 +33,14 @@ cp .env.example .env   # solo si hace falta alguna clave
 - Las URL de los JSON llevan un timestamp diario: se descubren parseando la página índice.
 - Todos los registros se guardan literalmente en `opendata_raw` (con hash para no duplicar)
   y de ahí se derivan las tablas normalizadas (`interes_economico`, …).
-- Estado: la tabla `diputado` se diseñará tras inspeccionar los JSON reales.
+- `diputado` se deriva de `DiputadosActivos` (137) + `DiputadosDeBaja` (275) = 412 de la XV. Los JSON
+  oficiales **no traen ningún identificador** (ni `codParlamentario`), así que el enlace con
+  `interes_economico` y con xerraires es por nombre normalizado, solo con coincidencia única; lo
+  ambiguo o sin candidato va a `revision_manual`.
+- Si cambia `db/schema.sql`, hay que borrar `db/rentismo.sqlite` y regenerarla (se reconstruye
+  entera desde la caché, sin descargar nada): `CREATE TABLE IF NOT EXISTS` no altera tablas existentes.
+- **User-Agent:** el cortafuegos del Congreso devuelve 403 a un UA con URL (`+https://…`). Se usa uno
+  identificable pero sin URL (ver `config.toml`).
 
 ### Fase 1b · Fuente externa de referencia: xerraires/diputados
 
@@ -52,9 +59,11 @@ conservan con `ocurrencia > 1`. Créditos: datos de xerraires (uso libre según 
 ### Fase 2 · Declaraciones de bienes y rentas (ruta docbienes)
 
 Cada diputado tiene en su ficha del Congreso enlaces a sus PDF:
-`/docbienes/leg15/{cod:06d}/{cod:06d}_{tipo}_e_{nºreg}_{aaaammdd}.pdf`. Un PDF por declaración, así
-que no hace falta segmentar boletines. El código `tipo` se guarda tal cual; su interpretación
-(000 = inicial, 001 = modificación, 002 = final) es una hipótesis pendiente de verificar.
+`/docbienes/leg15/{id:06d}/{id:06d}_{tipo}_e_{nºreg}_{aaaammdd}.pdf`. Un PDF por declaración, así
+que no hace falta segmentar boletines. **Ese `id` no es el `codParlamentario`** (difiere en 326 de 350 diputados; p. ej. Abades Martínez:
+cod 160, id 150), por eso se guarda aparte (`id_docbienes`). El código `tipo` se guarda tal cual:
+000 = inicial y 001 = modificación están verificados en fichas reales; 002 = final aún no se ha visto.
+Los PDF son escaneos puros (imagen CCITT a 300 ppi, sin capa de texto): hace falta OCR o visión.
 
 ```bash
 .venv/bin/python -m rentismo.fetch_docbienes --discover   # recorre fichas y registra URL

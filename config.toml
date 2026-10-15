@@ -17,7 +17,7 @@ sqlite_path = "db/rentismo.sqlite"
 
 [descargas]
 cache_dir = "data/raw"
-user_agent = "rentismo-sistemico/0.1 (+https://github.com/jamm87/rentismo-sistemico)"
+user_agent = "rentismo-sistemico/0.1 (proyecto de investigacion; datos abiertos)"  # un UA con URL "+https://..." lo bloquea el WAF del Congreso (403)
 min_intervalo_s = 1.0
 reintentos = 5
 backoff_base_s = 2.0

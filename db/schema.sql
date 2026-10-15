@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS interes_economico (
     raw_id          INTEGER NOT NULL UNIQUE REFERENCES opendata_raw(id),
     nombre          TEXT NOT NULL,          -- tal cual: "Apellidos,Nombre"
     nombre_key      TEXT NOT NULL,          -- normalizado: "APELLIDOS, NOMBRE"
-    diputado_id     INTEGER,                -- NULL hasta enlazar; los dudosos van a revision_manual
+    diputado_id     INTEGER REFERENCES diputado(id),  -- NULL si no hay emparejamiento único (ver revision_manual)
     fecha_registro  TEXT,                   -- ISO 8601; NULL si no se pudo leer
     fecha_registro_original TEXT,
     declaracion     TEXT,                   -- "Declaración inicial" / "Modificación de ..."
@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS revision_manual (
 CREATE TABLE IF NOT EXISTS declaracion_bienes (
     id                  INTEGER PRIMARY KEY,
     url                 TEXT NOT NULL UNIQUE,   -- https://www.congreso.es/docbienes/leg15/...
-    cod_parlamentario   INTEGER NOT NULL,
+    cod_parlamentario   INTEGER NOT NULL,   -- del registro de origen, NO de la ruta del PDF
+    id_docbienes        INTEGER NOT NULL,   -- id en la ruta /docbienes/legNN/{id}/ (≠ codParlamentario)
     legislatura         INTEGER NOT NULL,
     tipo_codigo         TEXT NOT NULL,          -- campo tal cual del nombre de fichero ('000', ...)
     tipo                TEXT,                   -- inicial | modificacion | final (inferido del código)
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS declaracion_bienes (
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ext_xerraires_diputado (
     cod_parlamentario   INTEGER PRIMARY KEY,
+    diputado_id         INTEGER REFERENCES diputado(id),
     source_file_id      INTEGER NOT NULL REFERENCES source_file(id),
     apellidos_nombre    TEXT NOT NULL,
     nombre_key          TEXT NOT NULL,
@@ -124,3 +126,26 @@ CREATE TABLE IF NOT EXISTS ext_xerraires_bien (
     pr                  TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_xbien_cod ON ext_xerraires_bien(cod_parlamentario, seccion);
+
+-- ---------------------------------------------------------------------------
+-- Diputados de la legislatura (datos abiertos: DiputadosActivos + DiputadosDeBaja).
+-- Los JSON oficiales NO traen codParlamentario ni ningún id: el enlace es por nombre.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS diputado (
+    id                  INTEGER PRIMARY KEY,
+    legislatura         TEXT NOT NULL,          -- de config.toml (los datasets son 'legislatura actual')
+    nombre              TEXT NOT NULL,          -- "Apellidos, Nombre" tal cual
+    nombre_key          TEXT NOT NULL,
+    circunscripcion     TEXT,
+    formacion           TEXT,
+    grupo               TEXT,
+    fecha_condicion_plena TEXT,
+    fecha_alta          TEXT NOT NULL,
+    fecha_baja          TEXT,                   -- NULL = en activo
+    fecha_alta_grupo    TEXT,
+    fecha_baja_grupo    TEXT,
+    biografia           TEXT,
+    raw_id              INTEGER NOT NULL UNIQUE REFERENCES opendata_raw(id),
+    UNIQUE (legislatura, nombre_key, fecha_alta)
+);
+CREATE INDEX IF NOT EXISTS ix_diputado_key ON diputado(nombre_key);

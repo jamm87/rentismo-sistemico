@@ -2,11 +2,15 @@
 
 Cada diputado tiene una ficha en congreso.es con enlaces a sus PDF:
     /docbienes/leg15/000150/000150_000_e_0000648_20230808.pdf
-                     cod     cod   tipo   nº reg   fecha
+                     id     id    tipo   nº reg   fecha
 
-Hipótesis a verificar con datos reales: el campo ``tipo`` ('000') codifica el tipo de
-declaración (0 = inicial, 1 = modificación, 2 = final). En el snapshot de xerraires
-solo aparece '000'. Por eso se guarda el código tal cual y la interpretación aparte.
+OJO: ese ``id`` de la ruta NO es el codParlamentario (difiere en 326 de 350 diputados de la
+XV; p. ej. Abades Martínez: codParlamentario 160, id 150). Se guarda como ``id_docbienes`` y el
+codParlamentario se toma siempre de otra fuente (ficha consultada o registro de xerraires).
+
+El campo ``tipo`` ('000') codifica el tipo de declaración (0 = inicial, 1 = modificación,
+2 = final). Verificado: 000 y 001 aparecen en fichas reales (001 con fecha posterior a la
+inicial); 002 aún no se ha visto. Se guarda el código tal cual y la interpretación aparte.
 
 Uso:
     python -m rentismo.fetch_docbienes --discover   # recorre fichas y registra URL
@@ -39,7 +43,7 @@ ROMANOS = {"XI": 11, "XII": 12, "XIII": 13, "XIV": 14, "XV": 15}
 @dataclass(frozen=True)
 class DocBienes:
     url: str
-    cod_parlamentario: int
+    id_docbienes: int      # id de la ruta del PDF; NO es el codParlamentario
     legislatura: int
     tipo_codigo: str
     tipo: str | None
@@ -72,12 +76,13 @@ def links_from_ficha(html: str) -> list[DocBienes]:
     return out
 
 
-def register(con: sqlite3.Connection, d: DocBienes, descubierta_por: str, ficha_url: str | None = None) -> bool:
+def register(con: sqlite3.Connection, d: DocBienes, cod_parlamentario: int, descubierta_por: str,
+             ficha_url: str | None = None) -> bool:
     cur = con.execute(
-        """INSERT INTO declaracion_bienes (url, cod_parlamentario, legislatura, tipo_codigo, tipo,
-               num_registro, fecha, ficha_url, descubierta_por)
-           VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(url) DO NOTHING""",
-        (d.url, d.cod_parlamentario, d.legislatura, d.tipo_codigo, d.tipo, d.num_registro, d.fecha,
+        """INSERT INTO declaracion_bienes (url, cod_parlamentario, id_docbienes, legislatura, tipo_codigo,
+               tipo, num_registro, fecha, ficha_url, descubierta_por)
+           VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(url) DO NOTHING""",
+        (d.url, cod_parlamentario, d.id_docbienes, d.legislatura, d.tipo_codigo, d.tipo, d.num_registro, d.fecha,
          ficha_url, descubierta_por))
     return cur.rowcount > 0
 
@@ -100,7 +105,7 @@ def discover(cfg: config.Config, con: sqlite3.Connection, client: PoliteClient) 
             if not docs:
                 log.info("cod %s: ficha sin declaraciones", cod)
             with con:
-                nuevas += sum(register(con, d, "ficha", url) for d in docs)
+                nuevas += sum(register(con, d, cod, "ficha", url) for d in docs)
     return nuevas
 
 

@@ -87,3 +87,30 @@ def test_load_is_idempotent(tmp_path, monkeypatch):
     assert rows == [("PEREZ GARCIA, JUAN", "2023-09-05", "05/09/2023", "ACME", None),
                     ("PEREZ GARCIA, JUAN", None, "fecha rota", None, None)]
     assert con.execute("SELECT COUNT(*) FROM opendata_raw").fetchone()[0] == 2
+
+
+def _con_diputados(tmp_path, nombres):
+    con = load.connect(tmp_path / "d.sqlite")
+    with con:
+        con.execute("INSERT INTO source_file (url,sha256,fetched_at,local_path) VALUES ('u','h','t','p')")
+        for i, (nombre, alta) in enumerate(nombres):
+            con.execute("INSERT INTO opendata_raw (dataset,record_hash,record_json,first_file_id,last_file_id) "
+                        "VALUES ('DiputadosActivos',?,?,1,1)",
+                        (str(i), json.dumps({"NOMBRE": nombre, "FECHAALTA": alta, "CIRCUNSCRIPCION": "Madrid"})))
+        load.load_diputados_oficiales(con, "XV")
+    return con
+
+
+def test_diputados_oficiales_y_enlace_sin_forzar(tmp_path):
+    con = _con_diputados(tmp_path, [("Pérez García, Juan", "01/08/2023"), ("López Ruiz, Ana", "01/08/2023"),
+                                    ("López Ruiz, Ana", "02/09/2024"), ("Sin Fecha, X", "")])
+    assert con.execute("SELECT COUNT(*) FROM diputado").fetchone()[0] == 3     # el de fecha ilegible se omite
+    with con:
+        for n in ("PEREZ GARCIA,Juan", "López Ruiz,Ana", "Nadie,Nadie"):
+            con.execute("INSERT INTO opendata_raw (dataset,record_hash,record_json,first_file_id,last_file_id) "
+                        "VALUES ('docacteco',?,?,1,1)", (n, json.dumps({"NOMBRE": n, "FECHAREGISTRO": "01/01/2024"})))
+        load.load_docacteco(con)
+        res = load.enlazar(con, "interes_economico", "nombre", "XV")
+    assert res == {"exacto": 1, "tokens": 0, "ambiguo": 1, "sin_candidatos": 1}
+    assert con.execute("SELECT COUNT(*) FROM interes_economico WHERE diputado_id IS NOT NULL").fetchone()[0] == 1
+    assert sorted(r[0] for r in con.execute("SELECT motivo FROM revision_manual")) == ["ambiguo", "sin_candidatos"]

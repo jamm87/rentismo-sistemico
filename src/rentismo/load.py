@@ -100,8 +100,12 @@ def run(cfg: config.Config, files: list[tuple[DatasetLink, CachedFile]]) -> None
         for link, f in files:
             fid = upsert_source_file(con, f, link.dataset)
             n = load_raw(con, link.dataset, fid, load_records(f))
-            log.info("%-40s %d filas nuevas/actualizadas", link.dataset, n)
+            log.info("%-40s %d filas procesadas", link.dataset, n)
         log.info("interes_economico: %d filas nuevas", load_docacteco(con))
+        leg = cfg.legislaturas[0]
+        log.info("diputado: %d filas nuevas", load_diputados_oficiales(con, leg))
+        log.info("enlace docacteco: %s", enlazar(con, "interes_economico", "nombre", leg))
+        log.info("enlace xerraires: %s", enlazar(con, "ext_xerraires_diputado", "apellidos_nombre", leg))
     print(stats(con))
 
 
@@ -109,7 +113,7 @@ def stats(con: sqlite3.Connection) -> str:
     lines = ["opendata_raw por dataset:"]
     for ds, n in con.execute("SELECT dataset, COUNT(*) FROM opendata_raw GROUP BY dataset ORDER BY dataset"):
         lines.append(f"  {ds:<40} {n:>7}")
-    for t in ("source_file", "interes_economico", "revision_manual"):
+    for t in ("source_file", "diputado", "interes_economico", "revision_manual"):
         lines.append(f"{t}: {con.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0]}")
     lines.append("interes_economico por tipo:")
     for tipo, n in con.execute("SELECT tipo, COUNT(*) FROM interes_economico GROUP BY tipo ORDER BY 2 DESC"):
@@ -128,6 +132,61 @@ def main(argv: list[str] | None = None) -> None:
         return
     run(cfg, fetch_all(cfg))
 
+
+
+# ---------------------------------------------------------------------------
+# Diputados oficiales y enlace por nombre
+# ---------------------------------------------------------------------------
+def load_diputados_oficiales(con: sqlite3.Connection, legislatura: str) -> int:
+    """Deriva `diputado` de DiputadosActivos + DiputadosDeBaja (legislatura actual)."""
+    rows = con.execute(
+        """SELECT r.id, r.dataset, r.record_json FROM opendata_raw r
+           LEFT JOIN diputado d ON d.raw_id = r.id
+           WHERE r.dataset IN ('DiputadosActivos','DiputadosDeBaja') AND d.id IS NULL""").fetchall()
+    n = 0
+    for raw_id, _ds, js in rows:
+        r = json.loads(js)
+        nombre = _txt(r.get("NOMBRE")) or ""
+        alta = parse_fecha_es(_txt(r.get("FECHAALTA")))
+        if not nombre or alta is None:
+            log.warning("Diputado sin nombre o fecha de alta legible (raw_id=%s): se omite", raw_id)
+            continue
+        f = lambda k: (parse_fecha_es(_txt(r.get(k))) or None)
+        iso = lambda d: d.isoformat() if d else None
+        cur = con.execute(
+            """INSERT INTO diputado (legislatura, nombre, nombre_key, circunscripcion, formacion, grupo,
+                   fecha_condicion_plena, fecha_alta, fecha_baja, fecha_alta_grupo, fecha_baja_grupo,
+                   biografia, raw_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(legislatura, nombre_key, fecha_alta) DO NOTHING""",
+            (legislatura, nombre, name_key(nombre), _txt(r.get("CIRCUNSCRIPCION")),
+             _txt(r.get("FORMACIONELECTORAL")), _txt(r.get("GRUPOPARLAMENTARIO")),
+             iso(f("FECHACONDICIONPLENA")), alta.isoformat(), iso(f("FECHABAJA")),
+             iso(f("FECHAALTAENGRUPOPARLAMENTARIO")), iso(f("FECHABAJAENGRUPOPARLAMENTARIO")),
+             _txt(r.get("BIOGRAFIA")), raw_id))
+        n += cur.rowcount
+    return n
+
+
+def enlazar(con: sqlite3.Connection, tabla: str, col_nombre: str, legislatura: str) -> dict[str, int]:
+    """Rellena `diputado_id` solo con coincidencias únicas; el resto va a revision_manual."""
+    from .matching import Candidate, Matcher
+    m = Matcher([Candidate(i, n) for i, n in
+                 con.execute("SELECT id, nombre FROM diputado WHERE legislatura=?", (legislatura,))])
+    out = {"exacto": 0, "tokens": 0, "ambiguo": 0, "sin_candidatos": 0}
+    for (nombre,) in con.execute(
+            f"SELECT DISTINCT {col_nombre} FROM {tabla} WHERE diputado_id IS NULL").fetchall():
+        res = m.match(nombre)
+        out[res.metodo] += 1
+        if res.diputado_id is not None:
+            con.execute(f"UPDATE {tabla} SET diputado_id=? WHERE {col_nombre}=? AND diputado_id IS NULL",
+                        (res.diputado_id, nombre))
+        else:
+            con.execute(
+                """INSERT INTO revision_manual (origen_tabla, nombre_original, nombre_key, motivo, candidatos_json)
+                   VALUES (?,?,?,?,?) ON CONFLICT(origen_tabla, nombre_key) DO NOTHING""",
+                (tabla, nombre, name_key(nombre), res.metodo,
+                 json.dumps([{"id": c.id, "nombre": c.nombre} for c in res.candidatos], ensure_ascii=False)))
+    return out
 
 if __name__ == "__main__":
     main()

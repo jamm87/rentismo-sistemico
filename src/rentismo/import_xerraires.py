@@ -62,7 +62,10 @@ def load_diputados(con: sqlite3.Connection, f: CachedFile) -> int:
     for d in json.loads(f.read_bytes()):
         alta, baja = parse_fecha_es(d.get("fchAlta")), parse_fecha_es(d.get("fchBaja"))
         con.execute(
-            """INSERT INTO ext_xerraires_diputado VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """INSERT INTO ext_xerraires_diputado (cod_parlamentario, source_file_id, apellidos_nombre, nombre_key,
+                   apellidos, nombre, genero, formacion, grupo, id_circunscripcion, circunscripcion,
+                   fecha_alta, fecha_baja, pdf_url)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(cod_parlamentario) DO UPDATE SET source_file_id=excluded.source_file_id,
                  apellidos_nombre=excluded.apellidos_nombre, nombre_key=excluded.nombre_key,
                  formacion=excluded.formacion, grupo=excluded.grupo, fecha_baja=excluded.fecha_baja,
@@ -74,7 +77,7 @@ def load_diputados(con: sqlite3.Connection, f: CachedFile) -> int:
              _t(d.get("url_ficha_bienes"))))
         doc = parse_docbienes_url(d.get("url_ficha_bienes") or "")
         if doc:
-            register(con, doc, "xerraires")
+            register(con, doc, int(d["codParlamentario"]), "xerraires")
         n += 1
     return n
 

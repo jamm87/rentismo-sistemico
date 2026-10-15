@@ -10,7 +10,7 @@ from rentismo.load import connect
 
 def test_parse_docbienes_url():
     d = parse_docbienes_url("/docbienes/leg15/000150/000150_000_e_0000648_20230808.pdf")
-    assert (d.cod_parlamentario, d.legislatura, d.tipo_codigo, d.tipo, d.num_registro, d.fecha) == (
+    assert (d.id_docbienes, d.legislatura, d.tipo_codigo, d.tipo, d.num_registro, d.fecha) == (
         150, 15, "000", "inicial", "0000648", "2023-08-08")
     assert d.url == "https://www.congreso.es/docbienes/leg15/000150/000150_000_e_0000648_20230808.pdf"
     assert parse_docbienes_url("/docbienes/leg15/x.pdf") is None
@@ -32,11 +32,11 @@ def test_interpretar_importes_por_seccion():
 
 
 def test_import_idempotent_and_flags_duplicates(tmp_path):
-    dip = [{"codParlamentario": 150, "apellidosNombre": "Abades Martínez, Cristina", "fchAlta": "08/08/2023",
+    dip = [{"codParlamentario": 160, "apellidosNombre": "Abades Martínez, Cristina", "fchAlta": "08/08/2023",
             "fchBaja": "", "url_ficha_bienes":
             "https://www.congreso.es/docbienes/leg15/000150/000150_000_e_0000648_20230808.pdf"}]
     bie = [{"seccion": "Depósito o cuenta", "descripcion": "Cuenta", "titulo": "1.000,00", "derecho": "",
-            "cod": "150", "nombre": "Abades Martínez, Cristina"}] * 2
+            "cod": "160", "nombre": "Abades Martínez, Cristina"}] * 2
     files = []
     for name, data in (("d.json", dip), ("b.json", bie)):
         p = tmp_path / name
@@ -49,6 +49,8 @@ def test_import_idempotent_and_flags_duplicates(tmp_path):
             load_bienes(con, files[1])
     assert con.execute("SELECT ocurrencia, valor FROM ext_xerraires_bien").fetchall() == [(1, "1000.00"), (2, "1000.00")]
     assert con.execute("SELECT COUNT(*), MIN(tipo) FROM declaracion_bienes").fetchone() == (1, "inicial")
+    # el codParlamentario viene del registro (160), no del id de la ruta del PDF (150)
+    assert con.execute("SELECT cod_parlamentario, id_docbienes FROM declaracion_bienes").fetchone() == (160, 150)
     assert con.execute("SELECT fecha_alta, fecha_baja FROM ext_xerraires_diputado").fetchone() == ("2023-08-08", None)
 
 
