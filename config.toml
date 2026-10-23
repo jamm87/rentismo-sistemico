@@ -10,7 +10,7 @@ campos = "completo"
 # Método de extracción de los PDF. Decisión (2026-10-15): híbrido. La visión da la estructura y
 # los importes; Tesseract verifica cada cifra por página. Sin coincidencia -> NULL + revisión.
 metodo_extraccion = "hibrido"
-modelo_vision = "claude-opus-5-5"   # más baratos: "claude-sonnet-5-5" (~mitad), "claude-haiku-5-5" (~1/40)
+modelo_vision = "claude-haiku-5-5"   # más baratos: "claude-sonnet-5-5" (~mitad), "claude-haiku-5-5" (~1/40)
 esfuerzo_vision = "medium"          # low | medium | high | xhigh | max
 ocr_dpi = 300
 tesseract_psm = 4                   # medido mejor que psm 6 en las muestras
