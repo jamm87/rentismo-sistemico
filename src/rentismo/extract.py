@@ -200,11 +200,13 @@ def vision_pdf(pdf: Path, cfg: config.Config, cache_dir: Path, client=None) -> R
             # (secretos de red del entorno); en ese caso el valor local es un marcador.
             client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY") or "inyectada-por-proxy")
         b64 = base64.standard_b64encode(pdf.read_bytes()).decode()
+        # Respaldo en servidor si el modelo rechaza la petición. Haiku no lo admite.
+        respaldo = {} if cfg.modelo_vision.startswith("claude-haiku") else {
+            "betas": [FALLBACK_BETA], "fallbacks": "default"}
         with client.beta.messages.stream(
             model=cfg.modelo_vision,
             max_tokens=64000,
-            betas=[FALLBACK_BETA],
-            fallbacks="default",
+            **respaldo,
             output_config={"effort": cfg.esfuerzo_vision,
                            "format": {"type": "json_schema", "schema": SCHEMA}},
             system=PROMPT,

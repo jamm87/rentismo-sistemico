@@ -127,3 +127,13 @@ def test_schema_estricto():
             check(s["items"])
     check(extract.SCHEMA)
     assert set(extract.SCHEMA["properties"]["partidas"]["items"]["properties"]["seccion"]["enum"]) == set(secciones.TODAS)
+
+
+def test_vision_pdf_haiku_sin_respaldo(tmp_path):
+    calls = []
+    client = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(stream=FakeStream(calls, _datos()))))
+    cfg = SimpleNamespace(modelo_vision="claude-haiku-5-5", esfuerzo_vision="medium")
+    pdf = tmp_path / "a.pdf"
+    pdf.write_bytes(b"%PDF-falso")
+    extract.vision_pdf(pdf, cfg, tmp_path, client=client)
+    assert "fallbacks" not in calls[0] and "betas" not in calls[0]
